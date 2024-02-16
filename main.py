@@ -2,6 +2,8 @@ import heapq
 import random
 import networkx as nx
 import matplotlib.pyplot as plt
+import numpy as np
+
 class Peer: 
     def __init__(self, peer_id, is_slow, is_low_cpu):
         self.peer_id = peer_id
@@ -11,6 +13,14 @@ class Peer:
 
     def __repr__(self):
         return f"Peer {self.peer_id} ({'slow' if self.is_slow else 'fast'}, {'low CPU' if self.is_low_cpu else 'high CPU'})"
+
+class Block:
+    def __init__ (self,blockid,parentid,txnIncluded):
+        self.blockid=blockid
+        self.parentid=parentid
+        self.txnIncluded=txnIncluded
+
+
 
 class Event:
     def __init__(self, time, peer, event_type, data=None):
@@ -30,15 +40,15 @@ class NetworkSimulator:
         self.num_peers = num_peers
         self.slow_percent = slow_percent
         self.low_cpu_percent = low_cpu_percent
-        self.numSlow= (self.slow_percent*num_peers)/100
+        self.numSlow= int((self.slow_percent*num_peers)/100)
         self.numFast= num_peers-self.numSlow
-        self.numLowCpu= (self.slow_percent*num_peers)/100
+        self.numLowCpu= int((self.slow_percent*num_peers)/100)
         self.numHighCpu= num_peers-self.numLowCpu
 
-        speedList = [True] * int(self.numSlow) + [False] * int(self.numFast)
+        speedList = [True] * self.numSlow + [False] * self.numFast
         random.shuffle(speedList)
 
-        cpuList = [True] * int(self.numLowCpu) + [False] * int(self.numHighCpu)
+        cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         random.shuffle(cpuList)
 
         # Create peers
@@ -89,22 +99,50 @@ class NetworkSimulator:
         # Randomly connect nodes
         for i in range(num_peers):
             num_connections = random.randint(3, 6)
-            connected_nodes = set()
-            while len(connected_nodes) < num_connections:
+            connected_nodes = self.peers[i].connected_peers
+            while len(self.peers[i].connected_peers) < num_connections:
                 connected_node = random.randint(0, num_peers - 1)
-                if connected_node != i and connected_node not in connected_nodes:
+                if connected_node != i and connected_node not in self.peers[i].connected_peers and len(self.peers[connected_node].connected_peers)<6:
+                    # delay=random.uniform(10,500) 
+                    # G.add_edge(i, connected_node,delay=delay)
                     G.add_edge(i, connected_node)
-                    connected_nodes.add(connected_node)
-            for index in connected_nodes:
-                self.peers[i].connected_peers.add(self.peers[index])
+                    self.peers[i].connected_peers.add(self.peers[connected_node])
+                    self.peers[connected_node].connected_peers.add(self.peers[i])
+            # for index in connected_nodes:
+            #     self.peers[i].connected_peers.add(self.peers[index])
             # self.peers[i].connected_peers=connected_nodes
             # self.peers[i].peer_id=i
+        self.edge_latencies={}
+        for edge in G.edges():
+            sender=edge[0]
+            receiver=edge[1]
+            node1=self.peers[sender]
+            node2=self.peers[receiver]
+            cij=0
+            if node1.is_slow or node2.is_slow:
+                cij=5000   #kbps
+            else:
+                cij=100000  #kbps 
+            propDelay=random.uniform(0.01,0.5) #Propagation delay(ρij)
+            dij=np.random.exponential(96/cij)
+            totalDelay=dij+propDelay
+            self.edge_latencies[(sender,receiver)]=totalDelay
+            # pos = nx.spring_layout(G)
+            # nx.draw_networkx_edge_labels(G, pos, edge_labels={(sender, receiver): f"{totalDelay:.6f}s"})
         
-        nx.draw(G)
+        nx.draw(G,with_labels=True)
+        # pos = nx.spring_layout(G)
+        # edge_labels = nx.get_edge_attributes(G, 'delay')
+        # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
         plt.savefig("Graph.png")
 
+
+
+
+
+
 if __name__ == "__main__":
-    num_peers = 10
+    num_peers = 11
     slow_percent = 20
     low_cpu_percent = 30
     simulation_time = 10
@@ -113,8 +151,6 @@ if __name__ == "__main__":
     for peer in network_simulator.peers:
         network_simulator.schedule_event(0, peer, "send_block")
     
-
-    
-
     network_simulator.graphGenerator()
     network_simulator.run_simulation(simulation_time)
+    print(network_simulator.edge_latencies)
