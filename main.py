@@ -3,6 +3,9 @@ import random
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import uuid
+
+eventQueue=[]
 
 class Peer: 
     def __init__(self, peer_id, is_slow, is_low_cpu):
@@ -10,6 +13,7 @@ class Peer:
         self.is_slow = is_slow
         self.is_low_cpu = is_low_cpu
         self.connected_peers = set()
+        self.coins=100
 
     def __repr__(self):
         return f"Peer {self.peer_id} ({'slow' if self.is_slow else 'fast'}, {'low CPU' if self.is_low_cpu else 'high CPU'})"
@@ -23,17 +27,26 @@ class Block:
 
 
 class Event:
-    def __init__(self, time, peer, event_type, data=None):
+    def __init__(self, time, event_type,sender=None, receiver=None,  transaction=None, block=None):
         self.time = time
-        self.peer = peer
+        self.sender = sender
+        self.receiver = receiver
         self.event_type = event_type
-        self.data = data
+        self.transaction = transaction
+        self.block= block
 
     def __lt__(self, other):
         return self.time < other.time
+    
+class Transaction:
+    def __init__(self, txn_id, sender_id, receiver_id, coins):
+        self.txn_id = txn_id
+        self.sender_id = sender_id
+        self.receiver_id = receiver_id
+        self.coins = coins
 
 class NetworkSimulator:
-    def __init__(self, num_peers, slow_percent, low_cpu_percent):
+    def __init__(self, num_peers, slow_percent, low_cpu_percent, meanInterarrivalTime):
         self.peers = []
         self.event_queue = []
         self.time = 0
@@ -41,13 +54,17 @@ class NetworkSimulator:
         self.slow_percent = slow_percent
         self.low_cpu_percent = low_cpu_percent
         self.numSlow= int((self.slow_percent*num_peers)/100)
+        self.numSlow= int((self.slow_percent*num_peers)/100)
         self.numFast= num_peers-self.numSlow
-        self.numLowCpu= int((self.slow_percent*num_peers)/100)
+        self.numLowCpu= int(int((self.slow_percent*num_peers)/100))
         self.numHighCpu= num_peers-self.numLowCpu
+        self.meanInterarrivalTime= meanInterarrivalTime
 
+        speedList = [True] * self.numSlow + [False] * self.numFast
         speedList = [True] * self.numSlow + [False] * self.numFast
         random.shuffle(speedList)
 
+        cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         random.shuffle(cpuList)
 
@@ -69,6 +86,31 @@ class NetworkSimulator:
         
         print(self.peers)
 
+    
+    def generateTransactions(self, simulationTime, sender):
+        temp = [item for item in self.peers if item != sender]
+        t_curr=np.random.exponential(self.meanInterarrivalTime)
+        while t_curr<simulationTime:
+            if sender.coins>0:
+                coinsSent=random.randint(1,sender.coins)
+                transaction=Transaction(uuid.uuid4(),
+                                        sender, 
+                                        random.choice(temp), 
+                                        coinsSent)
+                sender.coin=sender.coins-coinsSent
+                heapq.heappush(eventQueue,(t_curr,Event(t_curr,
+                                                        "transaction",
+                                                        transaction.sender_id,
+                                                        transaction.receiver_id, 
+                                                        transaction)))
+                t_curr=t_curr+np.random.exponential(self.meanInterarrivalTime)
+            else:
+                break
+                
+
+        
+        
+    
     def schedule_event(self, time, peer, event_type, data=None):
         event = Event(time, peer, event_type, data)
         heapq.heappush(self.event_queue, event)
@@ -150,15 +192,19 @@ class NetworkSimulator:
 
 
 if __name__ == "__main__":
-    num_peers = 11
+    num_peers = 7
     slow_percent = 20
     low_cpu_percent = 30
-    simulation_time = 10
+    simulation_time = 20
+    meanInterarrivalTime=5
 
-    network_simulator = NetworkSimulator(num_peers, slow_percent, low_cpu_percent)
+    network_simulator = NetworkSimulator(num_peers, slow_percent, low_cpu_percent, meanInterarrivalTime)
     for peer in network_simulator.peers:
-        network_simulator.schedule_event(0, peer, "send_block")
+        network_simulator.generateTransactions(simulation_time, peer)
+    print(eventQueue)
+
     
+
     network_simulator.graphGenerator()
     network_simulator.run_simulation(simulation_time)
     print(network_simulator.edge_latencies)
