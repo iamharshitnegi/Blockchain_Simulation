@@ -54,17 +54,14 @@ class NetworkSimulator:
         self.slow_percent = slow_percent
         self.low_cpu_percent = low_cpu_percent
         self.numSlow= int((self.slow_percent*num_peers)/100)
-        self.numSlow= int((self.slow_percent*num_peers)/100)
         self.numFast= num_peers-self.numSlow
-        self.numLowCpu= int(int((self.slow_percent*num_peers)/100))
+        self.numLowCpu= int((self.slow_percent*num_peers)/100)
         self.numHighCpu= num_peers-self.numLowCpu
         self.meanInterarrivalTime= meanInterarrivalTime
 
         speedList = [True] * self.numSlow + [False] * self.numFast
-        speedList = [True] * self.numSlow + [False] * self.numFast
         random.shuffle(speedList)
 
-        cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         random.shuffle(cpuList)
 
