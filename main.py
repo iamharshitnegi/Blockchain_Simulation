@@ -135,9 +135,17 @@ class NetworkSimulator:
         # edge_labels = nx.get_edge_attributes(G, 'delay')
         # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
         plt.savefig("Graph.png")
+        
+    def genTransaction(self):
+        sender=random.choice(num_peers)
+        receiver=random.choice(num_peers)
+        
+        coins_available = random.randint(1, 100)
+        coins_to_transfer = random.randint(1, coins_available)
+        # Generate transaction string
+        transaction = f"TxnID: {sender} pays {receiver} {coins_to_transfer} coins"
 
-
-
+        return transaction
 
 
 
