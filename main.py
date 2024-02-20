@@ -8,12 +8,13 @@ import uuid
 eventQueue=[]
 
 class Peer: 
-    def __init__(self, peer_id, is_slow, is_low_cpu):
+    def __init__(self, peer_id, is_slow, is_low_cpu, hashPower):
         self.peer_id = peer_id
         self.is_slow = is_slow
         self.is_low_cpu = is_low_cpu
         self.connected_peers = set()
         self.coins=100
+        self.hashPower=hashPower
 
     def __repr__(self):
         return f"Peer {self.peer_id} ({'slow' if self.is_slow else 'fast'}, {'low CPU' if self.is_low_cpu else 'high CPU'})"
@@ -64,13 +65,17 @@ class NetworkSimulator:
 
         cpuList = [True] * self.numLowCpu + [False] * self.numHighCpu
         random.shuffle(cpuList)
+        self.hash= 10/(10*self.num_peers-9*self.numLowCpu)
+
 
         # Create peers
         for i in range(num_peers):
             is_slow = speedList[i]
             is_low_cpu = cpuList[i]
-            peer = Peer(i, is_slow, is_low_cpu)
+            hashPower= self.hash/10 if is_low_cpu else self.hash
+            peer = Peer(i, is_slow, is_low_cpu, hashPower)
             self.peers.append(peer)
+
 
         
             # Connect peers randomly
@@ -105,7 +110,10 @@ class NetworkSimulator:
                 break
                 
 
-        
+    def generateBlocks(self, I=600):
+        for i in self.peers:
+            t=np.random.exponential(I/i.hashPower)
+            block= Block()
         
     
     def schedule_event(self, time, peer, event_type, data=None):
