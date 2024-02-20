@@ -15,15 +15,18 @@ class Peer:
         self.connected_peers = set()
         self.coins=100
         self.hashPower=hashPower
+        self.transactions=[]
 
     def __repr__(self):
         return f"Peer {self.peer_id} ({'slow' if self.is_slow else 'fast'}, {'low CPU' if self.is_low_cpu else 'high CPU'})"
 
 class Block:
-    def __init__ (self,blockid,parentid,txnIncluded):
+    def __init__ (self,blockid,parentid,txnIncluded,miner=None):
         self.blockid=blockid
         self.parentid=parentid
         self.txnIncluded=txnIncluded
+        self.miner=miner
+        self.balance=[]
 
 
 
@@ -40,10 +43,10 @@ class Event:
         return self.time < other.time
     
 class Transaction:
-    def __init__(self, txn_id, sender_id, receiver_id, coins):
+    def __init__(self, txn_id, sender, receiver, coins):
         self.txn_id = txn_id
-        self.sender_id = sender_id
-        self.receiver_id = receiver_id
+        self.sender = sender
+        self.receiver = receiver
         self.coins = coins
 
 class NetworkSimulator:
@@ -101,9 +104,9 @@ class NetworkSimulator:
                                         coinsSent)
                 sender.coin=sender.coins-coinsSent
                 heapq.heappush(eventQueue,(t_curr,Event(t_curr,
-                                                        "transaction",
-                                                        transaction.sender_id,
-                                                        transaction.receiver_id, 
+                                                        "transactionSend",
+                                                        transaction.sender,
+                                                        transaction.receiver, 
                                                         transaction)))
                 t_curr=t_curr+np.random.exponential(self.meanInterarrivalTime)
             else:
@@ -113,31 +116,59 @@ class NetworkSimulator:
     def generateBlocks(self, I=600):
         for i in self.peers:
             t=np.random.exponential(I/i.hashPower)
-            block= Block()
+            block= Block(uuid.uuid4(),
+                         genesis.id,
+                         Transaction(uuid.uuid4(),
+                                     None,
+                                     i,
+                                     50),
+                                     i)
+            heapq.heappush(eventQueue, (t, Event(t,"blockMine",block=block)))
         
     
     def schedule_event(self, time, peer, event_type, data=None):
         event = Event(time, peer, event_type, data)
         heapq.heappush(self.event_queue, event)
 
-    def run_simulation(self, end_time):
-        while self.time < end_time:
-            if not self.event_queue:
-                break
-            event = heapq.heappop(self.event_queue)
-            self.time = event.time
-            if event.event_type == "send_block":
-                receiver = random.choice(list(event.peer.connected_peers))
-                transmission_delay = random.uniform(0.1, 1.0) if event.peer.is_slow else random.uniform(0.01, 0.1)
-                self.schedule_event(self.time + transmission_delay, receiver, "receive_block")
-                print(f"At time {self.time}: Peer {event.peer.peer_id} sends block to Peer {receiver.peer_id}")
-            elif event.event_type == "receive_block":
-                print(f"At time {self.time}: Peer {event.peer.peer_id} receives block")
-            else:
-                print(f"Unknown event type: {event.event_type}")
+        
+    def run_simulation(self, simulationTime):
+        time=0
+        while eventQueue.__len__ and time<simulationTime:
+            time, event= heapq.heappop(eventQueue)
+            self.propagate(event,time)
+
     
+    def propagate(self,event,time):
+        if event.event_type=="transactionSend":
+            event.transaction.sender.transactions.append(event.transaction)
+            for i in event.sender.connected_peers:
+                t=time
+                latency=self.calculateLatency(event.sender,i,"transaction")
+                t+=latency
+                heapq.heappush(eventQueue,(t,Event(t,
+                                                   "transactionReceive",
+                                                   event.sender,
+                                                   i,
+                                                   event.transaction)))
+        
+        elif event.event_type=="transactionReceive":
+            sender=event.receiver
+            if event.transaction not in sender.transactions:
+                sender.transactions.append(event.transaction)
+                for i in event.sender.connected_peers:
+                    t=time
+                    latency=self.calculateLatency(event.sender,i,"transaction")
+                    t+=latency
+                    heapq.heappush(eventQueue,(t,Event(t,
+                                                       "transactionReceive",
+                                                       sender,
+                                                       i,
+                                                       event.transaction)))
+
+
     def graphGenerator(self):
-        G = nx.Graph()
+        self.G = nx.Graph()
+        G=self.G
 
         # Add nodes to the graph
         for i in range(num_peers):
@@ -159,21 +190,21 @@ class NetworkSimulator:
             #     self.peers[i].connected_peers.add(self.peers[index])
             # self.peers[i].connected_peers=connected_nodes
             # self.peers[i].peer_id=i
-        self.edge_latencies={}
-        for edge in G.edges():
-            sender=edge[0]
-            receiver=edge[1]
-            node1=self.peers[sender]
-            node2=self.peers[receiver]
-            cij=0
-            if node1.is_slow or node2.is_slow:
-                cij=5000   #kbps
-            else:
-                cij=100000  #kbps 
-            propDelay=random.uniform(0.01,0.5) #Propagation delay(ρij)
-            dij=np.random.exponential(96/cij)
-            totalDelay=dij+propDelay
-            self.edge_latencies[(sender,receiver)]=totalDelay
+        # self.edge_latencies=[]
+        # for edge in G.edges():
+        #     sender=edge[0]
+        #     receiver=edge[1]
+        #     node1=self.peers[sender]
+        #     node2=self.peers[receiver]
+        #     cij=0
+        #     if node1.is_slow or node2.is_slow:
+        #         cij=5000   #kbps
+        #     else:
+        #         cij=100000  #kbps 
+        #     propDelay=random.uniform(0.01,0.5) #Propagation delay(ρij)
+        #     dij=np.random.exponential(96/cij)
+        #     totalDelay=dij+propDelay
+        #     self.edge_latencies[(sender,receiver)]=totalDelay
             # pos = nx.spring_layout(G)
             # nx.draw_networkx_edge_labels(G, pos, edge_labels={(sender, receiver): f"{totalDelay:.6f}s"})
         
@@ -182,19 +213,20 @@ class NetworkSimulator:
         # edge_labels = nx.get_edge_attributes(G, 'delay')
         # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
         plt.savefig("Graph.png")
-        
-    def genTransaction(self):
-        sender=random.choice(num_peers)
-        receiver=random.choice(num_peers)
-        
-        coins_available = random.randint(1, 100)
-        coins_to_transfer = random.randint(1, coins_available)
-        # Generate transaction string
-        transaction = f"TxnID: {sender} pays {receiver} {coins_to_transfer} coins"
-
-        return transaction
-
-
+    
+    def calculateLatency(self,sender,receiver,type):
+            node1=sender
+            node2=receiver
+            cij=0
+            if node1.is_slow or node2.is_slow:
+                cij=5000   #kbps
+            else:
+                cij=100000  #kbps 
+            propDelay=random.uniform(0.01,0.5) #Propagation delay(ρij)
+            dij=np.random.exponential(96/cij)
+            mij=8/cij if type=="Txn" else 8000/cij #message delay as given in question
+            totalDelay=dij+propDelay+mij
+            return totalDelay
 
 if __name__ == "__main__":
     num_peers = 7
@@ -203,13 +235,15 @@ if __name__ == "__main__":
     simulation_time = 20
     meanInterarrivalTime=5
 
+    genesis=Block(uuid.uuid4(),0,None)
+
     network_simulator = NetworkSimulator(num_peers, slow_percent, low_cpu_percent, meanInterarrivalTime)
     for peer in network_simulator.peers:
         network_simulator.generateTransactions(simulation_time, peer)
-    print(eventQueue)
 
     
 
     network_simulator.graphGenerator()
     network_simulator.run_simulation(simulation_time)
-    print(network_simulator.edge_latencies)
+    print(eventQueue)
+    # print(network_simulator.edge_latencies)
