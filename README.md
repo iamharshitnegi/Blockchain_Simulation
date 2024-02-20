@@ -24,3 +24,6 @@ You can replace the arguments with the following:
 - lowCpuNodes : The percentage of low CPU nodes.
 - simTime : The total simulation time to run.
 - intArrTime : Interarrival time of transaction.
+
+After running the program will save all the visualized data into visualization folder
+You can check that for diffrent graphs and diagrams.
