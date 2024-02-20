@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
     ## number of nodes
     num_peers = int(sys.argv[1])
-
+ 
     ## percentage of slow nodes
     slow_percent = int(sys.argv[2])
 
