@@ -100,6 +100,7 @@ class NetworkSimulator:
                                         random.choice(temp), 
                                         coinsSent)
                 sender.coin=sender.coins-coinsSent
+                transaction.receiver_id.coins=transaction.receiver_id.coins+coinsSent
                 heapq.heappush(eventQueue,(t_curr,Event(t_curr,
                                                         "transaction",
                                                         transaction.sender_id,
@@ -110,12 +111,7 @@ class NetworkSimulator:
                 break
                 
 
-    def generateBlocks(self, I=600):
-        for i in self.peers:
-            t=np.random.exponential(I/i.hashPower)
-            block= Block()
-        
-    
+
     def schedule_event(self, time, peer, event_type, data=None):
         event = Event(time, peer, event_type, data)
         heapq.heappush(self.event_queue, event)
@@ -183,18 +179,22 @@ class NetworkSimulator:
         # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
         plt.savefig("Graph.png")
         
-    def genTransaction(self):
-        sender=random.choice(num_peers)
-        receiver=random.choice(num_peers)
+    # def genTransaction(self):
+    #     sender=random.choice(num_peers)
+    #     receiver=random.choice(num_peers)
         
-        coins_available = random.randint(1, 100)
-        coins_to_transfer = random.randint(1, coins_available)
-        # Generate transaction string
-        transaction = f"TxnID: {sender} pays {receiver} {coins_to_transfer} coins"
+    # #     coins_available = random.randint(1, 100)
+    # #     coins_to_transfer = random.randint(1, coins_available)
+    # #     # Generate transaction string
+    # #     transaction = f"TxnID: {sender} pays {receiver} {coins_to_transfer} coins"
 
-        return transaction
+    #     return transaction
 
-
+    currentTime=0
+    TxnCreationtime=0
+    while currentTime<simulationTime:
+        event=heappop(eventQueue)
+        currentTime=event.t_curr
 
 if __name__ == "__main__":
     num_peers = 7
