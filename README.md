@@ -26,4 +26,4 @@ You can replace the arguments with the following:
 - intArrTime : Interarrival time of transaction.
 
 After running the program will save all the visualized data into visualization folder
-You can check that for diffrent graphs and diagrams.
+You can check that for different graphs and diagrams.
