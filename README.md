@@ -14,7 +14,7 @@ In the project directory run:
 
 
 ```bash
-python main.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime
+python3 main.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime
 ```
 
 You can replace the arguments with the following:

@@ -1,3 +1,4 @@
+import sys
 import heapq
 import random
 import networkx as nx  ## for drawing graphs for visualization
@@ -238,12 +239,23 @@ class NetworkSimulator:
             return totalDelay
 
 if __name__ == "__main__":
-    num_peers = 7
-    slow_percent = 20
-    low_cpu_percent = 30
-    simulation_time = 20
-    meanInterarrivalTime=5
 
+    ## number of nodes
+    num_peers = int(sys.argv[1])
+
+    ## percentage of slow nodes
+    slow_percent = int(sys.argv[2])
+
+    ## percentage of low cpu nodes
+    low_cpu_percent = int(sys.argv[3])
+
+    ## total time to run the simulation for
+    simulation_time = int(sys.argv[4])
+
+    ## interarrival time for transactions
+    meanInterarrivalTime= int(sys.argv[5])
+
+    ## the first block of block chain or genesis block
     genesis=Block(uuid.uuid4(),0,None)
 
     network_simulator = NetworkSimulator(num_peers, slow_percent, low_cpu_percent, meanInterarrivalTime)
