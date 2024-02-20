@@ -3,8 +3,11 @@ Creating a Peer to Peer blockchain simulation network.
 
 ## Requirements:
 - Python
-- Graphviz for visualization of blockchain tree
+- Networkx
 - Numpy
+- Matplotlib
+- uuid
+- heapq
 
 ## How to Run (steps):
 In the project directory run:
