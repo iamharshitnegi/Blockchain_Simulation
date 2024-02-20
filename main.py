@@ -1,11 +1,14 @@
 import heapq
 import random
-import networkx as nx
+import networkx as nx  ## for drawing graphs for visualization
 import matplotlib.pyplot as plt
 import numpy as np
-import uuid
+import uuid  ## for assigning unique id's
 
-eventQueue=[]
+eventQueue=[]  ## queue to store all events
+
+
+## Class for diffrent nodes or peers
 
 class Peer: 
     def __init__(self, peer_id, is_slow, is_low_cpu, hashPower):
@@ -20,15 +23,8 @@ class Peer:
     def __repr__(self):
         return f"Peer {self.peer_id} ({'slow' if self.is_slow else 'fast'}, {'low CPU' if self.is_low_cpu else 'high CPU'})"
 
-class Block:
-    def __init__ (self,blockid,parentid,txnIncluded,miner=None):
-        self.blockid=blockid
-        self.parentid=parentid
-        self.txnIncluded=txnIncluded
-        self.miner=miner
-        self.balance=[]
 
-
+## Class for each event         
 
 class Event:
     def __init__(self, time, event_type,sender=None, receiver=None,  transaction=None, block=None):
@@ -42,12 +38,16 @@ class Event:
     def __lt__(self, other):
         return self.time < other.time
     
+## Class for diffrent transactions
+
 class Transaction:
     def __init__(self, txn_id, sender, receiver, coins):
         self.txn_id = txn_id
         self.sender = sender
         self.receiver = receiver
         self.coins = coins
+
+## The Main simulator class
 
 class NetworkSimulator:
     def __init__(self, num_peers, slow_percent, low_cpu_percent, meanInterarrivalTime):
@@ -71,7 +71,7 @@ class NetworkSimulator:
         self.hash= 10/(10*self.num_peers-9*self.numLowCpu)
 
 
-        # Create peers
+        ## Create nodes or neighbours or peers
         for i in range(num_peers):
             is_slow = speedList[i]
             is_low_cpu = cpuList[i]
@@ -81,7 +81,7 @@ class NetworkSimulator:
 
 
         
-            # Connect peers randomly
+        # Connect peers randomly
         # for i in range(num_peers):
         #     num_connections = random.randint(1, num_peers)
         #     connected_peers = random.sample(range(num_peers), num_connections)
@@ -92,6 +92,8 @@ class NetworkSimulator:
         print(self.peers)
 
     
+    ## This function generates the transactions for each node to diffrent node 
+
     def generateTransactions(self, simulationTime, sender):
         temp = [item for item in self.peers if item != sender]
         t_curr=np.random.exponential(self.meanInterarrivalTime)
@@ -112,6 +114,7 @@ class NetworkSimulator:
             else:
                 break
                 
+    ## Function to generate blocks based on hashing power
 
     def generateBlocks(self, I=600):
         for i in self.peers:
@@ -137,7 +140,8 @@ class NetworkSimulator:
             time, event= heapq.heappop(eventQueue)
             self.propagate(event,time)
 
-    
+    ## We can tell it as a broadcast function which propogates a transaction info into the network
+
     def propagate(self,event,time):
         if event.event_type=="transactionSend":
             event.transaction.sender.transactions.append(event.transaction)
@@ -166,15 +170,17 @@ class NetworkSimulator:
                                                        event.transaction)))
 
 
+
+    ## Generates the graph for our Peer to Peer network using the networkx library
     def graphGenerator(self):
         self.G = nx.Graph()
         G=self.G
 
-        # Add nodes to the graph
+        ## Add nodes to the graph
         for i in range(num_peers):
             G.add_node(i)
 
-        # Randomly connect nodes
+        ## Randomly connect nodes
         for i in range(num_peers):
             num_connections = random.randint(3, 6)
             connected_nodes = self.peers[i].connected_peers
@@ -214,15 +220,18 @@ class NetworkSimulator:
         # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
         plt.savefig("Graph.png")
     
+    ## Function to calculate latency based on the three parameters given in the 
+    ## assignment document.
+    
     def calculateLatency(self,sender,receiver,type):
             node1=sender
             node2=receiver
             cij=0
             if node1.is_slow or node2.is_slow:
-                cij=5000   #kbps
+                cij=5000                           #kbps
             else:
-                cij=100000  #kbps 
-            propDelay=random.uniform(0.01,0.5) #Propagation delay(ρij)
+                cij=100000                         #kbps 
+            propDelay=random.uniform(0.01,0.5)     #Propagation delay(ρij)
             dij=np.random.exponential(96/cij)
             mij=8/cij if type=="Txn" else 8000/cij #message delay as given in question
             totalDelay=dij+propDelay+mij
