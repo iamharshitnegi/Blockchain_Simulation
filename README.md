@@ -14,7 +14,7 @@ In the project directory run:
 
 
 ```bash
-python eventsim.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime
+python main.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime
 ```
 
 You can replace the arguments with the following:
