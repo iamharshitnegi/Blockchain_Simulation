@@ -25,5 +25,5 @@ You can replace the arguments with the following:
 - simTime : The total simulation time to run.
 - intArrTime : Interarrival time of transaction.
 - Adversary1Power : fraction of hashing power of adversary 1.
-- Adversary2Power : fraction of hashing power of adversary 2
+- Adversary2Power : fraction of hashing power of adversary 2.
 
