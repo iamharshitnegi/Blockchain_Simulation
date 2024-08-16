@@ -14,7 +14,7 @@ In the project directory run:
 
 
 ```bash
-python3 main.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime
+python3 main.py -nodes -slowNodes -lowCpuNodes -simTime -intArrTime -Adversary1Power -Adversary2Power
 ```
 
 You can replace the arguments with the following:
@@ -24,6 +24,6 @@ You can replace the arguments with the following:
 - lowCpuNodes : The percentage of low CPU nodes.
 - simTime : The total simulation time to run.
 - intArrTime : Interarrival time of transaction.
+- Adversary1Power : fraction of hashing power of adversary 1.
+- Adversary2Power : fraction of hashing power of adversary 2.
 
-After running the program will save all the visualized data into visualization folder
-You can check that for different graphs and diagrams.
